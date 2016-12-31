@@ -82,7 +82,27 @@ namespace SqlUnitTestHelper.MockDb
                 .Returns(getCommand);
             connection.Setup(c => c.Open());
             connection.Setup(c => c.OpenAsync(It.IsAny<CancellationToken>())).Returns(Task.FromResult((object) null));
+            connection.Setup(c => c.PublicBeginDbTransaction(It.IsAny<IsolationLevel>()))
+                .Returns<IsolationLevel>(level =>
+                {
+                    var mockTransaction = connection.Object.MockTransaction;
+                    if (mockTransaction == null)
+                    {
+                        connection.Object.MockTransaction = CreateTransaction();
+                        mockTransaction = connection.Object.MockTransaction;
+                        mockTransaction.Object.PublicDbConnection = connection.Object;
+                    }
+                    return mockTransaction.Object;
+                });
             return connection;
+        }
+
+        private static Mock<DbTransactionWrapper> CreateTransaction()
+        {
+            var mockTransaction = new Mock<DbTransactionWrapper>();
+            mockTransaction.CallBase = true;
+            mockTransaction.SetupAllProperties();
+            return mockTransaction;
         }
 
         private static Mock<DbDataReaderWrapper> CreateDataReader(string[] columnNames, List<object[]> dataValues)

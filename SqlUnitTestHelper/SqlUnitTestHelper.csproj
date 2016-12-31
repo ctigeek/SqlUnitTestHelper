@@ -53,6 +53,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="MockDb\DbParameterWrapper.cs" />
+    <Compile Include="MockDb\DbTransactionWrapper.cs" />
     <Compile Include="Tests\ThingySqlRepositoryTests.cs" />
     <Compile Include="Thingy.cs" />
     <Compile Include="ThingySqlRepository.cs" />

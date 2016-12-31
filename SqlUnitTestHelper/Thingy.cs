@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace SqlUnitTestHelper
 {
@@ -20,5 +21,6 @@ namespace SqlUnitTestHelper
         public string Description { get; set; }
         public DateTime CreationDate { get; set; }
         public ThingyStatus Status { get; set; }
+        public Dictionary<string, string> ThingyProperties { get; set; } = new Dictionary<string, string>();
     }
 }
