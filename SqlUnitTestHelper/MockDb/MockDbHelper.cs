@@ -15,6 +15,8 @@ namespace SqlUnitTestHelper.MockDb
             var command = CreateCommand();
             command.Setup(c => c.ExecuteNonQuery())
                 .Returns(callbackDeliverRowCount());
+            command.Setup(c => c.ExecuteNonQueryAsync(It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(callbackDeliverRowCount()));
             return command;
         }
 
@@ -23,6 +25,8 @@ namespace SqlUnitTestHelper.MockDb
             var command = CreateCommand();
             command.Setup(c => c.ExecuteScalar())
                 .Returns(callbackDeliverScalarObject());
+            command.Setup(c => c.ExecuteScalarAsync(It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(callbackDeliverScalarObject()));
             return command;
         }
 
@@ -34,6 +38,24 @@ namespace SqlUnitTestHelper.MockDb
                 .Returns<CommandBehavior>(c => command.Object.MockDatareader.Object);
             command.Setup(c => c.PublicExecuteDbDataReaderAsync(It.IsAny<CommandBehavior>(), It.IsAny<CancellationToken>()))
                 .Returns<CommandBehavior, CancellationToken>((behavior, token) => Task.FromResult((DbDataReader) command.Object.MockDatareader.Object));
+            return command;
+        }
+
+        public static Mock<DbCommandWrapper> CreateCommandCausesException(Exception exception)
+        {
+            var command = CreateCommand();
+            command.Setup(c => c.ExecuteNonQuery())
+                .Throws(exception);
+            command.Setup(c => c.ExecuteNonQueryAsync(It.IsAny<CancellationToken>()))
+                .Throws(exception);
+            command.Setup(c => c.ExecuteScalar())
+                .Throws(exception);
+            command.Setup(c => c.ExecuteScalarAsync(It.IsAny<CancellationToken>()))
+                .Throws(exception);
+            command.Setup(c => c.PublicExecuteDbDataReader(It.IsAny<CommandBehavior>()))
+                .Throws(exception);
+            command.Setup(c => c.PublicExecuteDbDataReaderAsync(It.IsAny<CommandBehavior>(), It.IsAny<CancellationToken>()))
+                .Throws(exception);
             return command;
         }
 

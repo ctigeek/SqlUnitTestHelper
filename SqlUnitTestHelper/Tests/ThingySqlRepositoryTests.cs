@@ -28,8 +28,6 @@ namespace SqlUnitTestHelper.Tests
         private Mock<DbCommandWrapper> mockGetPkCommand;
         private Mock<DbCommandWrapper>[] mockInsertPropCommands;
         private Mock<DbCommandWrapper> mockDeletePropCommand;
-        private Mock<DbCommandWrapper> mockUpdateCommand;
-
 
         [Test]
         public void GetTheThingyReturnsThingyTest()
@@ -180,6 +178,21 @@ namespace SqlUnitTestHelper.Tests
 
             //assert the transaction was committed.
             mockDbProviderFactory.Object.MockConnection.Object.MockTransaction.Verify(t=>t.Commit(),Times.Once);
+        }
+
+        [Test]
+        public void InsertTheThingyCausesExceptionAndRollback()
+        {
+            mockInsertCommand = MockDbHelper.CreateCommandCausesException(new ApplicationException());
+            mockDbProviderFactory = MockDbHelper.CreateMockProviderFactory(mockInsertCommand);
+            repository = new ThingySqlRepository(mockDbProviderFactory.Object);
+            var thingy = CreateThingy();
+            thingy.PrimaryKey = 0;
+
+            Assert.Throws(typeof(ApplicationException), () => repository.SaveOrUpdateTheThingy(thingy));
+
+            // verify rollback
+            mockDbProviderFactory.Object.MockConnection.Object.MockTransaction.Verify(t=>t.Rollback(),Times.Once);
         }
 
         private void SetupMockFactoryForInsert()
