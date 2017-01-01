@@ -61,7 +61,7 @@ namespace SqlUnitTestHelper
                     if (reader.Read())
                     {
                         var thingy = BuildThingyFromReader(reader);
-                        thingy.ThingyProperties = GetThingyAttributes(thingy.PrimaryKey, conn);
+                        thingy.ThingyProperties = GetThingyProperties(thingy.PrimaryKey, conn);
                         return thingy;
                     }
                 }
@@ -69,7 +69,7 @@ namespace SqlUnitTestHelper
             return null;
         }
 
-        private Dictionary<string, string> GetThingyAttributes(int pk, DbConnection connection)
+        private Dictionary<string, string> GetThingyProperties(int pk, DbConnection connection)
         {
             var props = new Dictionary<string, string>();
             var command = connection.CreateCommand(getTheThingyPropsSql);
@@ -98,7 +98,7 @@ namespace SqlUnitTestHelper
                     if (await reader.ReadAsync())
                     {
                         var thingy = BuildThingyFromReader(reader);
-                        thingy.ThingyProperties = await GetThingyAttributesAsync(thingy.PrimaryKey, conn);
+                        thingy.ThingyProperties = await GetThingyPropertiesAsync(thingy.PrimaryKey, conn);
                         return thingy;
                     }
                 }
@@ -106,7 +106,7 @@ namespace SqlUnitTestHelper
             return null;
         }
 
-        private async Task<Dictionary<string, string>> GetThingyAttributesAsync(int pk, DbConnection connection)
+        private async Task<Dictionary<string, string>> GetThingyPropertiesAsync(int pk, DbConnection connection)
         {
             var props = new Dictionary<string, string>();
             var command = connection.CreateCommand(getTheThingyPropsSql);
