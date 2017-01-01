@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Moq;
@@ -143,7 +144,42 @@ namespace SqlUnitTestHelper.Tests
             thingy.PrimaryKey = 0;
             repository.SaveOrUpdateTheThingy(thingy);
 
+            //assert inserting the row...
+            var queryParameters = mockInsertCommand.Object.PublicParameters?.Parameters;
+            Assert.That(queryParameters.First(q=>q.ParameterName == "name").Value, Is.EqualTo(name));
+            Assert.That(queryParameters.First(q => q.ParameterName == "desc").Value, Is.EqualTo(description));
+            Assert.That(queryParameters.First(q => q.ParameterName == "status").Value, Is.EqualTo(status.ToString()));
+            Assert.That(queryParameters.First(q => q.ParameterName == "createDate").Value, Is.EqualTo(createDate));
+            Assert.That(mockInsertCommand.Object.CommandText, Is.EqualTo(ThingySqlRepository.insertThingySql));
+            mockInsertCommand.Verify(c=>c.ExecuteNonQuery(), Times.Once);
 
+            //assert getting the pk...
+            Assert.That(mockGetPkCommand.Object.CommandText, Is.EqualTo(ThingySqlRepository.retrieveThingyPkSql));
+            mockGetPkCommand.Verify(c => c.ExecuteScalar(), Times.Once);
+            Assert.That(thingy.PrimaryKey, Is.EqualTo(pk));
+
+            //assert deleting the props....
+            var deleteParameters = mockDeletePropCommand.Object.PublicParameters?.Parameters;
+            Assert.That(deleteParameters.First(q => q.ParameterName == "thing_pk").Value, Is.EqualTo(pk));
+            Assert.That(mockDeletePropCommand.Object.CommandText, Is.EqualTo(ThingySqlRepository.deleteThingyPropsSql));
+            mockDeletePropCommand.Verify(c=>c.ExecuteNonQuery(), Times.Once);
+
+            // assert props inserts...
+            int i = 0;
+            foreach (var prop in thingy.ThingyProperties)
+            {
+                var propCommand = mockInsertPropCommands[i];
+                var propParameters = propCommand.Object.PublicParameters?.Parameters;
+                Assert.That(propParameters.First(q => q.ParameterName == "thing_pk").Value, Is.EqualTo(pk));
+                Assert.That(propParameters.First(q => q.ParameterName == "prop_name").Value, Is.EqualTo(prop.Key));
+                Assert.That(propParameters.First(q => q.ParameterName == "prop_value").Value, Is.EqualTo(prop.Value));
+                Assert.That(propCommand.Object.CommandText, Is.EqualTo(ThingySqlRepository.insertThingyPropsSql));
+                propCommand.Verify(c => c.ExecuteNonQuery(), Times.Once);
+                i++;
+            }
+
+            //assert the transaction was committed.
+            mockDbProviderFactory.Object.MockConnection.Object.MockTransaction.Verify(t=>t.Commit(),Times.Once);
         }
 
         private void SetupMockFactoryForInsert()
