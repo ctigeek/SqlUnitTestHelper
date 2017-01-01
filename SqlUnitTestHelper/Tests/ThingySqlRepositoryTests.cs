@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Data;
 using System.Threading;
 using System.Threading.Tasks;
@@ -20,8 +21,14 @@ namespace SqlUnitTestHelper.Tests
 
         private ThingySqlRepository repository;
         private Mock<DbProviderFactoryWrapper> mockDbProviderFactory;
-        private Mock<DbCommandWrapper> mockDbCommand;
+        private Mock<DbCommandWrapper> mockSelectDbCommand;
         private Mock<DbCommandWrapper> mockPropertyCommand;
+        private Mock<DbCommandWrapper> mockInsertCommand;
+        private Mock<DbCommandWrapper> mockGetPkCommand;
+        private Mock<DbCommandWrapper>[] mockInsertPropCommands;
+        private Mock<DbCommandWrapper> mockDeletePropCommand;
+        private Mock<DbCommandWrapper> mockUpdateCommand;
+
 
         [Test]
         public void GetTheThingyReturnsThingyTest()
@@ -32,8 +39,8 @@ namespace SqlUnitTestHelper.Tests
             CommonGetAssertions(thingy);
 
             //Validate the command and reader were used correctly....
-            mockDbCommand.Verify(c => c.PublicExecuteDbDataReader(It.IsAny<CommandBehavior>()), Times.Once);
-            mockDbCommand.Object.MockDatareader.Verify(dr => dr.Read(), Times.Once);
+            mockSelectDbCommand.Verify(c => c.PublicExecuteDbDataReader(It.IsAny<CommandBehavior>()), Times.Once);
+            mockSelectDbCommand.Object.MockDatareader.Verify(dr => dr.Read(), Times.Once);
             mockDbProviderFactory.Verify(f => f.CreateConnection(), Times.Once);
 
             mockPropertyCommand.Verify(c => c.PublicExecuteDbDataReader(It.IsAny<CommandBehavior>()), Times.Once);
@@ -49,8 +56,8 @@ namespace SqlUnitTestHelper.Tests
             CommonGetAssertions(thingy);
 
             //Validate the command and reader were used correctly....
-            mockDbCommand.Verify(c=>c.PublicExecuteDbDataReaderAsync(It.IsAny<CommandBehavior>(), It.IsAny<CancellationToken>()), Times.Once);
-            mockDbCommand.Object.MockDatareader.Verify(dr=>dr.ReadAsync(It.IsAny<CancellationToken>()),Times.Once);
+            mockSelectDbCommand.Verify(c=>c.PublicExecuteDbDataReaderAsync(It.IsAny<CommandBehavior>(), It.IsAny<CancellationToken>()), Times.Once);
+            mockSelectDbCommand.Object.MockDatareader.Verify(dr=>dr.ReadAsync(It.IsAny<CancellationToken>()),Times.Once);
             mockDbProviderFactory.Verify(f=>f.CreateConnection(), Times.Once);
 
             mockPropertyCommand.Verify(c => c.PublicExecuteDbDataReaderAsync(It.IsAny<CommandBehavior>(), It.IsAny<CancellationToken>()), Times.Once);
@@ -71,7 +78,7 @@ namespace SqlUnitTestHelper.Tests
             Assert.That(thingy.ThingyProperties["name3"], Is.EqualTo("value3"));
 
             //Validate the parameters sent with the query are correct...
-            var queryParameter = mockDbCommand.Object.PublicParameters?.Parameters[0];
+            var queryParameter = mockSelectDbCommand.Object.PublicParameters?.Parameters[0];
             Assert.That(queryParameter, Is.Not.Null);
             Assert.That(queryParameter.ParameterName, Is.EqualTo("name"));
             Assert.That(queryParameter.Value, Is.EqualTo(name));
@@ -83,7 +90,7 @@ namespace SqlUnitTestHelper.Tests
             Assert.That(propParameter.Value, Is.EqualTo(pk));
 
             //Validate the correct SQL was used....
-            Assert.That(mockDbCommand.Object.CommandText, Is.EqualTo(ThingySqlRepository.getTheThingySql));
+            Assert.That(mockSelectDbCommand.Object.CommandText, Is.EqualTo(ThingySqlRepository.getTheThingySql));
             Assert.That(mockPropertyCommand.Object.CommandText, Is.EqualTo(ThingySqlRepository.getTheThingyPropsSql));
 
         }
@@ -115,7 +122,7 @@ namespace SqlUnitTestHelper.Tests
             {
                 dataValues.Add(row1);
             }
-            mockDbCommand = MockDbHelper.CreateCommandForDatareader(columnNames, dataValues);
+            mockSelectDbCommand = MockDbHelper.CreateCommandForDatareader(columnNames, dataValues);
 
             var propColumnNames = new string[] {"prop_name", "prop_value"};
             var prop1 = new object[] {"name1", "value1"};
@@ -124,8 +131,47 @@ namespace SqlUnitTestHelper.Tests
             var propValues = new List<object[]>(new[] {prop1, prop2, prop3});
             mockPropertyCommand = MockDbHelper.CreateCommandForDatareader(propColumnNames, propValues);
 
-            mockDbProviderFactory = MockDbHelper.CreateMockProviderFactory(mockDbCommand, mockPropertyCommand);
+            mockDbProviderFactory = MockDbHelper.CreateMockProviderFactory(mockSelectDbCommand, mockPropertyCommand);
             repository = new ThingySqlRepository(mockDbProviderFactory.Object);
+        }
+
+        [Test]
+        public void InsertTheThingyTest()
+        {
+            SetupMockFactoryForInsert();
+            var thingy = CreateThingy();
+            thingy.PrimaryKey = 0;
+            repository.SaveOrUpdateTheThingy(thingy);
+
+
+        }
+
+        private void SetupMockFactoryForInsert()
+        {
+            mockInsertCommand = MockDbHelper.CreateCommandForNonQuery(() => 1);
+            mockGetPkCommand = MockDbHelper.CreateCommandForScalarQuery(() => 123);
+            mockDeletePropCommand = MockDbHelper.CreateCommandForNonQuery(() => 1);
+            mockInsertPropCommands = new Mock<DbCommandWrapper>[3];
+            for (var i = 0; i < 3; i++) mockInsertPropCommands[i] = MockDbHelper.CreateCommandForNonQuery(() => 1);
+            mockDbProviderFactory = MockDbHelper.CreateMockProviderFactory(
+                mockInsertCommand, mockGetPkCommand, mockDeletePropCommand, mockInsertPropCommands[0], mockInsertPropCommands[1], mockInsertPropCommands[2]);
+            repository = new ThingySqlRepository(mockDbProviderFactory.Object);
+        }
+
+        private Thingy CreateThingy()
+        {
+            var thingy = new Thingy
+            {
+                PrimaryKey = pk,
+                Name = name,
+                Description = description,
+                CreationDate = createDate,
+                Status = status
+            };
+            thingy.ThingyProperties.Add("name1", "value1");
+            thingy.ThingyProperties.Add("name2", "value2");
+            thingy.ThingyProperties.Add("name3", "value3");
+            return thingy;
         }
     }
 }
