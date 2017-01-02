@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Moq;
@@ -61,17 +62,7 @@ namespace SqlUnitTestHelper.MockDb
 
         public static MockDbProviderFactory CreateMockProviderFactory(params Mock<DbCommandWrapper>[] dbCommands)
         {
-            var factory = new MockDbProviderFactory();
-
-            foreach (var mc in dbCommands)
-                factory.MockCommands.Add(mc);
-
-            var connection = new MockDbConnection(factory.GetNextCommand);
-            factory.MockConnection = connection;
-            factory.Setup(f => f.CreateConnection())
-                .Returns(connection.Object);
-            factory.Setup(f => f.CreateCommand())
-                .Returns(factory.GetNextCommand);
+            var factory = new MockDbProviderFactory(dbCommands.ToList());
             return factory;
         }
 
