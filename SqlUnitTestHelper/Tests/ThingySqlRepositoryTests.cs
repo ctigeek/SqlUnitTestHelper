@@ -176,7 +176,7 @@ namespace SqlUnitTestHelper.Tests
             }
 
             //assert the transaction was committed.
-            mockDbProviderFactory.MockConnection.Object.MockTransaction.Verify(t=>t.Commit(),Times.Once);
+            mockDbProviderFactory.MockConnection.MockTransaction.Verify(t=>t.Commit(),Times.Once);
         }
 
         [Test]
@@ -191,7 +191,7 @@ namespace SqlUnitTestHelper.Tests
             Assert.Throws(typeof(ApplicationException), () => repository.SaveOrUpdateTheThingy(thingy));
 
             // verify rollback
-            mockDbProviderFactory.MockConnection.Object.MockTransaction.Verify(t=>t.Rollback(),Times.Once);
+            mockDbProviderFactory.MockConnection.MockTransaction.Verify(t=>t.Rollback(),Times.Once);
         }
 
         private void SetupMockFactoryForInsert()

@@ -62,13 +62,11 @@ namespace SqlUnitTestHelper.MockDb
         public static MockDbProviderFactory CreateMockProviderFactory(params Mock<DbCommandWrapper>[] dbCommands)
         {
             var factory = new MockDbProviderFactory();
-            factory.CallBase = true;
-            factory.SetupAllProperties();
 
             foreach (var mc in dbCommands)
                 factory.MockCommands.Add(mc);
 
-            var connection = CreateConnection(factory.GetNextCommand);
+            var connection = new MockDbConnection(factory.GetNextCommand);
             factory.MockConnection = connection;
             factory.Setup(f => f.CreateConnection())
                 .Returns(connection.Object);
@@ -86,38 +84,6 @@ namespace SqlUnitTestHelper.MockDb
             command.Setup(c => c.PublicCreateParameter())
                 .Returns(() =>new DbParameterWrapper());
             return command;
-        }
-
-        private static Mock<DbConnectionWrapper> CreateConnection(Func<DbCommandWrapper> getCommand)
-        {
-            var connection = new Mock<DbConnectionWrapper>();
-            connection.CallBase = true;
-            connection.SetupAllProperties();
-            connection.Setup(c => c.PublicCreateDbCommand())
-                .Returns(getCommand);
-            connection.Setup(c => c.Open());
-            connection.Setup(c => c.OpenAsync(It.IsAny<CancellationToken>())).Returns(Task.FromResult((object) null));
-            connection.Setup(c => c.PublicBeginDbTransaction(It.IsAny<IsolationLevel>()))
-                .Returns<IsolationLevel>(level =>
-                {
-                    var mockTransaction = connection.Object.MockTransaction;
-                    if (mockTransaction == null)
-                    {
-                        connection.Object.MockTransaction = CreateTransaction();
-                        mockTransaction = connection.Object.MockTransaction;
-                        mockTransaction.Object.PublicDbConnection = connection.Object;
-                    }
-                    return mockTransaction.Object;
-                });
-            return connection;
-        }
-
-        private static Mock<DbTransactionWrapper> CreateTransaction()
-        {
-            var mockTransaction = new Mock<DbTransactionWrapper>();
-            mockTransaction.CallBase = true;
-            mockTransaction.SetupAllProperties();
-            return mockTransaction;
         }
 
         private static Mock<DbDataReaderWrapper> CreateDataReader(string[] columnNames, List<object[]> dataValues)
