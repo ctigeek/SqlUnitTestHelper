@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Data;
 using System.Linq;
 using System.Threading;
@@ -21,7 +20,7 @@ namespace SqlUnitTestHelper.Tests
         private readonly ThingyStatus status = ThingyStatus.Sherbert;
 
         private ThingySqlRepository repository;
-        private Mock<DbProviderFactoryWrapper> mockDbProviderFactory;
+        private MockDbProviderFactory mockDbProviderFactory;
         private Mock<DbCommandWrapper> mockSelectDbCommand;
         private Mock<DbCommandWrapper> mockPropertyCommand;
         private Mock<DbCommandWrapper> mockInsertCommand;
@@ -177,7 +176,7 @@ namespace SqlUnitTestHelper.Tests
             }
 
             //assert the transaction was committed.
-            mockDbProviderFactory.Object.MockConnection.Object.MockTransaction.Verify(t=>t.Commit(),Times.Once);
+            mockDbProviderFactory.MockConnection.Object.MockTransaction.Verify(t=>t.Commit(),Times.Once);
         }
 
         [Test]
@@ -192,7 +191,7 @@ namespace SqlUnitTestHelper.Tests
             Assert.Throws(typeof(ApplicationException), () => repository.SaveOrUpdateTheThingy(thingy));
 
             // verify rollback
-            mockDbProviderFactory.Object.MockConnection.Object.MockTransaction.Verify(t=>t.Rollback(),Times.Once);
+            mockDbProviderFactory.MockConnection.Object.MockTransaction.Verify(t=>t.Rollback(),Times.Once);
         }
 
         private void SetupMockFactoryForInsert()

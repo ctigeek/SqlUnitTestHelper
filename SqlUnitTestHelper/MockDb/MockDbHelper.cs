@@ -59,28 +59,21 @@ namespace SqlUnitTestHelper.MockDb
             return command;
         }
 
-        public static Mock<DbProviderFactoryWrapper> CreateMockProviderFactory(params Mock<DbCommandWrapper>[] dbCommands)
+        public static MockDbProviderFactory CreateMockProviderFactory(params Mock<DbCommandWrapper>[] dbCommands)
         {
-            var factory = new Mock<DbProviderFactoryWrapper>();
+            var factory = new MockDbProviderFactory();
             factory.CallBase = true;
             factory.SetupAllProperties();
-            factory.Object.MockCommands = new List<Mock<DbCommandWrapper>>();
-            factory.Object.CurrentIndex = -1;
+
             foreach (var mc in dbCommands)
-                factory.Object.MockCommands.Add(mc);
+                factory.MockCommands.Add(mc);
 
-            var getCommand = new Func<DbCommandWrapper>(() =>
-            {
-                factory.Object.CurrentIndex++;
-                return factory.Object.MockCommands[factory.Object.CurrentIndex].Object;
-            });
-
-            var connection = CreateConnection(getCommand);
-            factory.Object.MockConnection = connection;
+            var connection = CreateConnection(factory.GetNextCommand);
+            factory.MockConnection = connection;
             factory.Setup(f => f.CreateConnection())
                 .Returns(connection.Object);
             factory.Setup(f => f.CreateCommand())
-                .Returns(getCommand);
+                .Returns(factory.GetNextCommand);
             return factory;
         }
 

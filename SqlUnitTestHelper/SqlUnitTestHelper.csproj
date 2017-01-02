@@ -54,6 +54,7 @@
   <ItemGroup>
     <Compile Include="MockDb\DbParameterWrapper.cs" />
     <Compile Include="MockDb\DbTransactionWrapper.cs" />
+    <Compile Include="MockDb\MockDbProviderFactory.cs" />
     <Compile Include="Tests\ThingySqlRepositoryTests.cs" />
     <Compile Include="Thingy.cs" />
     <Compile Include="ThingySqlRepository.cs" />
@@ -65,7 +66,6 @@
     </Compile>
     <Compile Include="MockDb\DbDataReaderWrapper.cs" />
     <Compile Include="MockDb\DbParameterCollectionWrapper.cs" />
-    <Compile Include="MockDb\DbProviderFactoryWrapper.cs" />
     <Compile Include="MockDb\MockDbHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
