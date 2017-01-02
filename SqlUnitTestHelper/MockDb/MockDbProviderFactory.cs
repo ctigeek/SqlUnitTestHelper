@@ -8,19 +8,23 @@ namespace SqlUnitTestHelper.MockDb
     public class MockDbProviderFactory : Mock<DbProviderFactory>
     {
         public readonly MockDbConnection MockConnection;
-        public IReadOnlyList<Mock<DbCommandWrapper>> MockCommands { get; private set; }
+        public IReadOnlyList<MockDbCommand> MockCommands { get; }
         private int MockCommandsIndex { get; set; } = -1;
 
-        public MockDbProviderFactory(IList<Mock<DbCommandWrapper>> commands = null) : base(MockBehavior.Loose)
+        public MockDbProviderFactory(MockDbCommand mockCommand) : this(new[] {mockCommand})
+        {
+        }
+
+        public MockDbProviderFactory(IList<MockDbCommand> commands = null) : base(MockBehavior.Loose)
         {
             MockCommands = commands == null ? 
-                new List<Mock<DbCommandWrapper>>()  : new List<Mock<DbCommandWrapper>>(commands);
-            this.CallBase = true;
-            this.SetupAllProperties();
+                new List<MockDbCommand>()  : new List<MockDbCommand>(commands);
+            CallBase = true;
+            SetupAllProperties();
             MockConnection = new MockDbConnection(GetNextCommand);
-            this.Setup(f => f.CreateConnection())
+            Setup(f => f.CreateConnection())
                 .Returns(MockConnection.Object);
-            this.Setup(f => f.CreateCommand())
+            Setup(f => f.CreateCommand())
                 .Returns(GetNextCommand);
         }
 

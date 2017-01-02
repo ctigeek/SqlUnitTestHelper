@@ -16,7 +16,7 @@ namespace SqlUnitTestHelper.Tests
         private readonly string name = "Thing-One";
         private readonly string description = "Not thing two!";
         private readonly int pk = 123;
-        private readonly DateTime createDate = new DateTime(2000,1,1);
+        private readonly DateTime createDate = new DateTime(2000, 1, 1);
         private readonly ThingyStatus status = ThingyStatus.Sherbert;
 
         private ThingySqlRepository repository;
@@ -54,9 +54,9 @@ namespace SqlUnitTestHelper.Tests
             CommonGetAssertions(thingy);
 
             //Validate the command and reader were used correctly....
-            mockSelectDbCommand.Verify(c=>c.PublicExecuteDbDataReaderAsync(It.IsAny<CommandBehavior>(), It.IsAny<CancellationToken>()), Times.Once);
-            mockSelectDbCommand.MockDatareader.Verify(dr=>dr.ReadAsync(It.IsAny<CancellationToken>()),Times.Once);
-            mockDbProviderFactory.Verify(f=>f.CreateConnection(), Times.Once);
+            mockSelectDbCommand.Verify(c => c.PublicExecuteDbDataReaderAsync(It.IsAny<CommandBehavior>(), It.IsAny<CancellationToken>()), Times.Once);
+            mockSelectDbCommand.MockDatareader.Verify(dr => dr.ReadAsync(It.IsAny<CancellationToken>()), Times.Once);
+            mockDbProviderFactory.Verify(f => f.CreateConnection(), Times.Once);
 
             mockPropertyCommand.Verify(c => c.PublicExecuteDbDataReaderAsync(It.IsAny<CommandBehavior>(), It.IsAny<CancellationToken>()), Times.Once);
             mockPropertyCommand.MockDatareader.Verify(dr => dr.ReadAsync(It.IsAny<CancellationToken>()), Times.Exactly(4));
@@ -127,7 +127,7 @@ namespace SqlUnitTestHelper.Tests
             var propValues = new List<object[]>(new[] {prop1, prop2, prop3});
             mockPropertyCommand = new MockDbCommand(propColumnNames, propValues);
 
-            mockDbProviderFactory = MockDbHelper.CreateMockProviderFactory(mockSelectDbCommand, mockPropertyCommand);
+            mockDbProviderFactory = new MockDbProviderFactory(new[] {mockSelectDbCommand, mockPropertyCommand});
             repository = new ThingySqlRepository(mockDbProviderFactory.Object);
         }
 
@@ -141,12 +141,12 @@ namespace SqlUnitTestHelper.Tests
 
             //assert inserting the row...
             var queryParameters = mockInsertCommand.ParameterCollection.Parameters;
-            Assert.That(queryParameters.First(q=>q.ParameterName == "name").Value, Is.EqualTo(name));
+            Assert.That(queryParameters.First(q => q.ParameterName == "name").Value, Is.EqualTo(name));
             Assert.That(queryParameters.First(q => q.ParameterName == "desc").Value, Is.EqualTo(description));
             Assert.That(queryParameters.First(q => q.ParameterName == "status").Value, Is.EqualTo(status.ToString()));
             Assert.That(queryParameters.First(q => q.ParameterName == "createDate").Value, Is.EqualTo(createDate));
             Assert.That(mockInsertCommand.Object.CommandText, Is.EqualTo(ThingySqlRepository.insertThingySql));
-            mockInsertCommand.Verify(c=>c.ExecuteNonQuery(), Times.Once);
+            mockInsertCommand.Verify(c => c.ExecuteNonQuery(), Times.Once);
 
             //assert getting the pk...
             Assert.That(mockGetPkCommand.Object.CommandText, Is.EqualTo(ThingySqlRepository.retrieveThingyPkSql));
@@ -157,7 +157,7 @@ namespace SqlUnitTestHelper.Tests
             var deleteParameters = mockDeletePropCommand.ParameterCollection.Parameters;
             Assert.That(deleteParameters.First(q => q.ParameterName == "thing_pk").Value, Is.EqualTo(pk));
             Assert.That(mockDeletePropCommand.Object.CommandText, Is.EqualTo(ThingySqlRepository.deleteThingyPropsSql));
-            mockDeletePropCommand.Verify(c=>c.ExecuteNonQuery(), Times.Once);
+            mockDeletePropCommand.Verify(c => c.ExecuteNonQuery(), Times.Once);
 
             // assert props inserts...
             int i = 0;
@@ -174,14 +174,14 @@ namespace SqlUnitTestHelper.Tests
             }
 
             //assert the transaction was committed.
-            mockDbProviderFactory.MockConnection.MockTransaction.Verify(t=>t.Commit(),Times.Once);
+            mockDbProviderFactory.MockConnection.MockTransaction.Verify(t => t.Commit(), Times.Once);
         }
 
         [Test]
         public void InsertTheThingyCausesExceptionAndRollback()
         {
             mockInsertCommand = new MockDbCommand(new ApplicationException());
-            mockDbProviderFactory = MockDbHelper.CreateMockProviderFactory(mockInsertCommand);
+            mockDbProviderFactory = new MockDbProviderFactory(mockInsertCommand);
             repository = new ThingySqlRepository(mockDbProviderFactory.Object);
             var thingy = CreateThingy();
             thingy.PrimaryKey = 0;
@@ -189,18 +189,20 @@ namespace SqlUnitTestHelper.Tests
             Assert.Throws(typeof(ApplicationException), () => repository.SaveOrUpdateTheThingy(thingy));
 
             // verify rollback
-            mockDbProviderFactory.MockConnection.MockTransaction.Verify(t=>t.Rollback(),Times.Once);
+            mockDbProviderFactory.MockConnection.MockTransaction.Verify(t => t.Rollback(), Times.Once);
         }
 
         private void SetupMockFactoryForInsert()
         {
             mockInsertCommand = new MockDbCommand(() => 1);
-            mockGetPkCommand = new MockDbCommand(() => (object)123);
+            mockGetPkCommand = new MockDbCommand(() => (object) 123);
             mockDeletePropCommand = new MockDbCommand(() => 1);
             mockInsertPropCommands = new MockDbCommand[3];
             for (var i = 0; i < 3; i++) mockInsertPropCommands[i] = new MockDbCommand(() => 1);
-            mockDbProviderFactory = MockDbHelper.CreateMockProviderFactory(
-                mockInsertCommand, mockGetPkCommand, mockDeletePropCommand, mockInsertPropCommands[0], mockInsertPropCommands[1], mockInsertPropCommands[2]);
+            mockDbProviderFactory = new MockDbProviderFactory(new[]
+            {
+                mockInsertCommand, mockGetPkCommand, mockDeletePropCommand, mockInsertPropCommands[0], mockInsertPropCommands[1], mockInsertPropCommands[2]
+            });
             repository = new ThingySqlRepository(mockDbProviderFactory.Object);
         }
 

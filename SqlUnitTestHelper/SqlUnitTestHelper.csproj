@@ -69,7 +69,6 @@
     </Compile>
     <Compile Include="MockDb\DbDataReaderWrapper.cs" />
     <Compile Include="MockDb\DbParameterCollectionWrapper.cs" />
-    <Compile Include="MockDb\MockDbHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
