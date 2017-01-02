@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Data.Common;
 using Moq;
 
@@ -28,6 +27,10 @@ namespace SqlUnitTestHelper.MockDb
         public DbCommandWrapper GetNextCommand()
         {
             MockCommandsIndex++;
+            if (MockCommandsIndex >= MockCommands.Count)
+            {
+                throw new InvalidOperationException("Your code tried to create more commands than what you have set up.");
+            }
             return MockCommands[MockCommandsIndex].Object;
         }
 
