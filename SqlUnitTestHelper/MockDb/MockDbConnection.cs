@@ -8,7 +8,7 @@ namespace SqlUnitTestHelper.MockDb
 {
     public class MockDbConnection : Mock<DbConnectionWrapper>
     {
-        public Mock<DbTransactionWrapper> MockTransaction { get; set; }
+        public MockDbTransaction MockTransaction { get; set; }
 
         public MockDbConnection(Func<DbCommandWrapper> getCommand ) : base(MockBehavior.Default)
         {
@@ -19,18 +19,9 @@ namespace SqlUnitTestHelper.MockDb
             this.Setup(c => c.Open());
             this.Setup(c => c.OpenAsync(It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult((object)null));
+            MockTransaction = new MockDbTransaction(this.Object);
             this.Setup(c => c.PublicBeginDbTransaction(It.IsAny<IsolationLevel>()))
-                .Returns<IsolationLevel>(level =>
-                {
-                    if (MockTransaction == null)
-                    {
-                        MockTransaction = new Mock<DbTransactionWrapper>();
-                        MockTransaction.CallBase = true;
-                        MockTransaction.SetupAllProperties();
-                        MockTransaction.Object.PublicDbConnection = this.Object;
-                    }
-                    return MockTransaction.Object;
-                });
+                .Returns<IsolationLevel>(level => MockTransaction.Object);
         }
     }
 }

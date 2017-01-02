@@ -56,6 +56,7 @@
     <Compile Include="MockDb\DbTransactionWrapper.cs" />
     <Compile Include="MockDb\MockDbConnection.cs" />
     <Compile Include="MockDb\MockDbProviderFactory.cs" />
+    <Compile Include="MockDb\MockDbTransaction.cs" />
     <Compile Include="Tests\ThingySqlRepositoryTests.cs" />
     <Compile Include="Thingy.cs" />
     <Compile Include="ThingySqlRepository.cs" />
