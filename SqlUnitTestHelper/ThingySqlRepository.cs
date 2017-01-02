@@ -166,7 +166,7 @@ namespace SqlUnitTestHelper
                     var rowcount = insertCommand.ExecuteNonQuery();
                     //TODO: check rowcount... if not right then throw error.
 
-                    var pkCommand = connection.CreateCommand(retrieveThingyPkSql);
+                    var pkCommand = connection.CreateCommand(retrieveThingyPkSql, transaction);
                     theThingy.PrimaryKey = (int) pkCommand.ExecuteScalar();
 
                     UpdateThingyProperties(theThingy, connection, transaction);

@@ -16,6 +16,7 @@ namespace SqlUnitTestHelper.MockDb
             if (parameter == null)
                 throw new ArgumentNullException(nameof(value));
             Parameters.Add(parameter);
+            // why does this return an int??
             return 1;
         }
 
@@ -78,7 +79,7 @@ namespace SqlUnitTestHelper.MockDb
 
         public override IEnumerator GetEnumerator()
         {
-            throw new NotImplementedException();
+            return Parameters.GetEnumerator();
         }
 
         protected override DbParameter GetParameter(int index)
@@ -98,12 +99,18 @@ namespace SqlUnitTestHelper.MockDb
 
         public override void CopyTo(Array array, int index)
         {
-            throw new NotImplementedException();
+            var paramArray = array as DbParameter[];
+            foreach (var parameter in Parameters)
+            {
+                paramArray[index] = parameter;
+                index++;
+            }
         }
 
         public override void AddRange(Array values)
         {
-            throw new NotImplementedException();
+            var paramArray = values as DbParameter[];
+            Parameters.AddRange(paramArray);
         }
     }
 }
