@@ -7,9 +7,9 @@ namespace SqlUnitTestHelper.MockDb
     {
         public MockDbTransaction(DbConnection connection) : base(MockBehavior.Default)
         {
-            this.CallBase = true;
-            this.SetupAllProperties();
-            this.SetupGet(t => t.PublicDbConnection).Returns(connection);
+            CallBase = true;
+            SetupAllProperties();
+            SetupGet(t => t.PublicDbConnection).Returns(connection);
         }
     }
 }

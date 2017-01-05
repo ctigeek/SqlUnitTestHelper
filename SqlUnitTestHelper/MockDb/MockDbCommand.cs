@@ -63,8 +63,8 @@ namespace SqlUnitTestHelper.MockDb
             CallBase = true;
             SetupAllProperties();
             ParameterCollection = new DbParameterCollectionWrapper();
-            SetupGet(c => c.PublicParameters)
-                .Returns(ParameterCollection);
+
+            SetupGet(c => c.PublicParameters).Returns(ParameterCollection);
             Setup(c => c.PublicCreateParameter())
                 .Returns(() => new DbParameterWrapper());
         }

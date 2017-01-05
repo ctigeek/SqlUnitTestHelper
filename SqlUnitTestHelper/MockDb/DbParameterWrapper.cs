@@ -8,7 +8,6 @@ namespace SqlUnitTestHelper.MockDb
     {
         public override void ResetDbType()
         {
-            throw new NotImplementedException();
         }
 
         public override DbType DbType { get; set; }

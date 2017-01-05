@@ -83,6 +83,5 @@ namespace SqlUnitTestHelper.MockDb
             }
             return MockCommands[MockCommandsIndex].Object;
         }
-
     }
 }
