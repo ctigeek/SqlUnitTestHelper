@@ -12,7 +12,7 @@ using SqlUnitTestHelper.Repositories;
 namespace SqlUnitTestHelper.Tests
 {
     [TestFixture]
-    public class ThingySqlRepositoryTests
+    public class ThingyDapperRepositoryTests
     {
         private readonly string name = "Thing-One";
         private readonly string description = "Not thing two!";
@@ -20,7 +20,7 @@ namespace SqlUnitTestHelper.Tests
         private readonly DateTime createDate = new DateTime(2000, 1, 1);
         private readonly ThingyStatus status = ThingyStatus.Sherbert;
 
-        private ThingySqlRepository repository;
+        private ThingyDapperRepository repository;
         private MockDbProviderFactory mockDbProviderFactory;
 
         [Test]
@@ -34,7 +34,7 @@ namespace SqlUnitTestHelper.Tests
             //Validate the command and reader were used correctly....
             var mockSelectDbCommand = mockDbProviderFactory.MockCommands[0];
             mockSelectDbCommand.Verify(c => c.PublicExecuteDbDataReader(It.IsAny<CommandBehavior>()), Times.Once);
-            mockSelectDbCommand.MockDatareader.Verify(dr => dr.Read(), Times.Once);
+            mockSelectDbCommand.MockDatareader.Verify(dr => dr.Read(), Times.AtLeastOnce);
             mockDbProviderFactory.Verify(f => f.CreateConnection(), Times.Once);
             var mockPropertyCommand = mockDbProviderFactory.MockCommands[1];
             mockPropertyCommand.Verify(c => c.PublicExecuteDbDataReader(It.IsAny<CommandBehavior>()), Times.Once);
@@ -52,7 +52,7 @@ namespace SqlUnitTestHelper.Tests
             //Validate the command and reader were used correctly....
             var mockSelectDbCommand = mockDbProviderFactory.MockCommands[0];
             mockSelectDbCommand.Verify(c => c.PublicExecuteDbDataReaderAsync(It.IsAny<CommandBehavior>(), It.IsAny<CancellationToken>()), Times.Once);
-            mockSelectDbCommand.MockDatareader.Verify(dr => dr.ReadAsync(It.IsAny<CancellationToken>()), Times.Once);
+            mockSelectDbCommand.MockDatareader.Verify(dr => dr.ReadAsync(It.IsAny<CancellationToken>()), Times.AtLeastOnce);
             mockDbProviderFactory.Verify(f => f.CreateConnection(), Times.Once);
             var mockPropertyCommand = mockDbProviderFactory.MockCommands[1];
             mockPropertyCommand.Verify(c => c.PublicExecuteDbDataReaderAsync(It.IsAny<CommandBehavior>(), It.IsAny<CancellationToken>()), Times.Once);
@@ -111,10 +111,11 @@ namespace SqlUnitTestHelper.Tests
         private void SetupMockFactoryForGet(bool withData)
         {
             var columnNames = new[] {"pk", "name", "desc", "createDate", "status"};
-            var row1 = new object[] {pk, name, description, createDate, status.ToString()};
+            
             var dataValues = new List<object[]>();
             if (withData)
             {
+                var row1 = new object[] { pk, name, description, createDate, status.ToString() };
                 dataValues.Add(row1);
             }
 
@@ -128,7 +129,7 @@ namespace SqlUnitTestHelper.Tests
                 .AddDatareaderCommand(columnNames, dataValues)
                 .AddDatareaderCommand(propColumnNames, propValues);
 
-            repository = new ThingySqlRepository(mockDbProviderFactory.Object);
+            repository = new ThingyDapperRepository(mockDbProviderFactory.Object);
         }
 
         [Test]
@@ -180,7 +181,7 @@ namespace SqlUnitTestHelper.Tests
         {
             mockDbProviderFactory = new MockDbProviderFactory()
                 .AddExceptionThrowingCommand(new ApplicationException());
-            repository = new ThingySqlRepository(mockDbProviderFactory.Object);
+            repository = new ThingyDapperRepository(mockDbProviderFactory.Object);
             var thingy = CreateThingy();
             thingy.PrimaryKey = 0;
 
@@ -195,7 +196,7 @@ namespace SqlUnitTestHelper.Tests
             mockDbProviderFactory = new MockDbProviderFactory()
                 .AddScalarCommand(123)
                 .AddNonQueryCommand(1, 1, 1, 1);
-            repository = new ThingySqlRepository(mockDbProviderFactory.Object);
+            repository = new ThingyDapperRepository(mockDbProviderFactory.Object);
         }
 
         private Thingy CreateThingy()

@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Configuration;
-using System.Data;
 using System.Data.Common;
 using System.Threading.Tasks;
 
-namespace SqlUnitTestHelper
+namespace SqlUnitTestHelper.Repositories
 {
     #region table_definitions
         // create table dbo.things (
@@ -21,47 +19,25 @@ namespace SqlUnitTestHelper
         //      prop_value varchar(1500) not null )
     #endregion
 
-    public class ThingySqlRepository
+    public class ThingySqlRepository : RepoBase
     {
-        public const string getTheThingySql = "select pk, name, desc, createDate, status from dbo.things where name = @name;";
-        public const string getTheThingyPropsSql = "select prop_name, prop_value from thing_props where thing_pk = @thing_pk;";
-        public const string insertThingySql = "insert into dbo.things (name,desc,createDate,status) values (@name,@desc,@createDate,@status);";
-        public const string retrieveThingyPkSql = "select SCOPE_IDENTITY();";
-        public const string updateThingySql = "update dbo.things set name=@name, desc=@desc, status=@status where pk=@pk;";
-        public const string deleteThingyPropsSql = "delete from dbo.thing_props where thing_pk = @thing_pk;";
-        public const string insertThingyPropsSql = "insert into dbo.thing_props (thing_pk,prop_name,prop_value) values (@thing_pk,@prop_name,@prop_value);";
-        private const string ConnectionStringName = "myDb";
-        private static readonly DbProviderFactory staticProviderFactory;
-        private static readonly string connectionString;
-
-        static ThingySqlRepository()
+        public ThingySqlRepository(DbProviderFactory factory = null) : base(factory)
         {
-            var connectionStringConfig = ConfigurationManager.ConnectionStrings[ConnectionStringName];
-            if (connectionStringConfig == null)
-                throw new ConfigurationErrorsException("The connection string " + ConnectionStringName + " is missing.");
-            connectionString = connectionStringConfig.ConnectionString;
-            staticProviderFactory = DbProviderFactories.GetFactory(connectionStringConfig.ProviderName);
-        }
-
-        private readonly DbProviderFactory dbProviderFactory;
-        public ThingySqlRepository(DbProviderFactory factory = null)
-        {
-            dbProviderFactory = factory ?? staticProviderFactory;
         }
 
         public Thingy GetTheThingyByName(string name)
         {
-            using (var conn = dbProviderFactory.CreateConnection(connectionString))
+            using (var connection = dbProviderFactory.CreateConnection(ConnectionString))
             {
-                conn.Open();
-                var command = conn.CreateCommand(getTheThingySql);
+                connection.Open();
+                var command = connection.CreateCommand(GetTheThingySql);
                 command.AddParameter("name", name);
                 using (var reader = command.ExecuteReader())
                 {
                     if (reader.Read())
                     {
                         var thingy = BuildThingyFromReader(reader);
-                        thingy.ThingyProperties = GetThingyProperties(thingy.PrimaryKey, conn);
+                        thingy.ThingyProperties = GetThingyProperties(thingy.PrimaryKey, connection);
                         return thingy;
                     }
                 }
@@ -72,7 +48,7 @@ namespace SqlUnitTestHelper
         private Dictionary<string, string> GetThingyProperties(int pk, DbConnection connection)
         {
             var props = new Dictionary<string, string>();
-            var command = connection.CreateCommand(getTheThingyPropsSql);
+            var command = connection.CreateCommand(GetTheThingyPropsSql);
             command.AddParameter("thing_pk", pk);
             using (var reader = command.ExecuteReader())
             {
@@ -88,10 +64,10 @@ namespace SqlUnitTestHelper
 
         public async Task<Thingy> GetTheThingyByNameAsync(string name)
         {
-            using (var conn = dbProviderFactory.CreateConnection(connectionString))
+            using (var conn = dbProviderFactory.CreateConnection(ConnectionString))
             {
                 await conn.OpenAsync();
-                var command = conn.CreateCommand(getTheThingySql);
+                var command = conn.CreateCommand(GetTheThingySql);
                 command.AddParameter("name", name);
                 using (var reader = await command.ExecuteReaderAsync())
                 {
@@ -109,7 +85,7 @@ namespace SqlUnitTestHelper
         private async Task<Dictionary<string, string>> GetThingyPropertiesAsync(int pk, DbConnection connection)
         {
             var props = new Dictionary<string, string>();
-            var command = connection.CreateCommand(getTheThingyPropsSql);
+            var command = connection.CreateCommand(GetTheThingyPropsSql);
             command.AddParameter("thing_pk", pk);
             using (var reader = await command.ExecuteReaderAsync())
             {
@@ -154,21 +130,17 @@ namespace SqlUnitTestHelper
             DbTransaction transaction = null;
             try
             {
-                using (var connection = dbProviderFactory.CreateConnection(connectionString))
+                using (var connection = dbProviderFactory.CreateConnection(ConnectionString))
                 {
                     connection.Open();
                     transaction = connection.BeginTransaction();
-                    var insertCommand = connection.CreateCommand(insertThingySql,transaction);
+                    var insertCommand = connection.CreateCommand(InsertThingySql,transaction);
                     insertCommand.AddParameter("name", theThingy.Name);
                     insertCommand.AddParameter("desc", theThingy.Description);
                     insertCommand.AddParameter("status", theThingy.Status.ToString());
                     insertCommand.AddParameter("createDate", theThingy.CreationDate);
-                    var rowcount = insertCommand.ExecuteNonQuery();
-                    //TODO: check rowcount... if not right then throw error.
-
-                    var pkCommand = connection.CreateCommand(retrieveThingyPkSql, transaction);
-                    theThingy.PrimaryKey = (int) pkCommand.ExecuteScalar();
-
+                    var pk = (int) insertCommand.ExecuteScalar();
+                    theThingy.PrimaryKey = pk;
                     UpdateThingyProperties(theThingy, connection, transaction);
                     transaction.Commit();
                 }
@@ -185,11 +157,11 @@ namespace SqlUnitTestHelper
             DbTransaction transaction = null;
             try
             {
-                using (var connection = dbProviderFactory.CreateConnection(connectionString))
+                using (var connection = dbProviderFactory.CreateConnection(ConnectionString))
                 {
                     connection.Open();
                     transaction = connection.BeginTransaction();
-                    var command = connection.CreateCommand(updateThingySql, transaction);
+                    var command = connection.CreateCommand(UpdateThingySql, transaction);
                     command.AddParameter("name", theThingy.Name);
                     command.AddParameter("desc", theThingy.Description);
                     command.AddParameter("status", theThingy.Status.ToString());
@@ -209,56 +181,18 @@ namespace SqlUnitTestHelper
 
         private void UpdateThingyProperties(Thingy theThingy, DbConnection connection, DbTransaction transaction)
         {
-            var deleteCommand = connection.CreateCommand(deleteThingyPropsSql, transaction);
+            var deleteCommand = connection.CreateCommand(DeleteThingyPropsSql, transaction);
             deleteCommand.AddParameter("thing_pk", theThingy.PrimaryKey);
             deleteCommand.ExecuteNonQuery();
 
             foreach (var nvp in theThingy.ThingyProperties)
             {
-                var insertCommand = connection.CreateCommand(insertThingyPropsSql, transaction);
+                var insertCommand = connection.CreateCommand(InsertThingyPropsSql, transaction);
                 insertCommand.AddParameter("thing_pk", theThingy.PrimaryKey);
                 insertCommand.AddParameter("prop_name", nvp.Key);
                 insertCommand.AddParameter("prop_value", nvp.Value);
                 insertCommand.ExecuteNonQuery();
             }
-        }
-
-        private ThingyStatus GetThingyStatus(string status)
-        {
-            ThingyStatus thingyStatus = ThingyStatus.Unknown;
-            if (ThingyStatus.TryParse(status, true, out thingyStatus))
-            {
-                return thingyStatus;
-            }
-            return ThingyStatus.Unknown;
-        }
-    }
-
-    static class DbHelpers
-    {
-        public static DbConnection CreateConnection(this DbProviderFactory factory, string connectionString)
-        {
-            var connection = factory.CreateConnection();
-            connection.ConnectionString = connectionString;
-            return connection;
-        }
-
-        public static DbCommand CreateCommand(this DbConnection connection, string commandText, DbTransaction transaction = null, CommandType commandType = CommandType.Text)
-        {
-            var command = connection.CreateCommand();
-            command.CommandText = commandText;
-            command.CommandType = commandType;
-            command.Transaction = transaction;
-            return command;
-        }
-
-        public static DbCommand AddParameter(this DbCommand command,string name, object value)
-        {
-            var parameter = command.CreateParameter();
-            parameter.Value = value;
-            parameter.ParameterName = name;
-            command.Parameters.Add(parameter);
-            return command;
         }
     }
 }
