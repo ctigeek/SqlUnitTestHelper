@@ -21,6 +21,8 @@ namespace SqlUnitTestHelper.MockDb
                 .Returns(MockConnection.Object);
             Setup(f => f.CreateCommand())
                 .Returns(GetNextCommand);
+            Setup(f => f.CreateParameter())
+                .Returns(new DbParameterWrapper());
         }
 
         public MockDbProviderFactory AddDatareaderCommand(string[] columnNames, List<object[]> dataValues)
